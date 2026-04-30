@@ -1,5 +1,4 @@
 name: Build Notification APK
-
 on: [push]
 
 jobs:
@@ -15,61 +14,33 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Android SDK
+      - name: Prepare Android Project
         run: |
-          # Set Android SDK path (provided by GitHub runner)
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
-          # Accept licenses and install required SDK components
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" "build-tools;33.0.0"
-
-      - name: Prepare Android project structure
-        run: |
-          # Create necessary directories
+          # 1. Folders banana
           mkdir -p app/src/main/java/com/notif/read
           mkdir -p app/src/main
-
-          # Move the Java file and manifest
+          
+          # 2. Files ko sahi jagah rakhna
           cp MyNotificationListener.java app/src/main/java/com/notif/read/
           cp AndroidManifest.xml app/src/main/
-
-          # Ensure the Java file declares the correct package (if missing, add it)
-          JAVA_FILE="app/src/main/java/com/notif/read/MyNotificationListener.java"
-          if ! grep -q "^package com.notif.read;" "$JAVA_FILE"; then
-            sed -i '1s/^/package com.notif.read;\n\n/' "$JAVA_FILE"
-          fi
-
-      - name: Generate Gradle files
-        run: |
-          # settings.gradle
+          
+          # 3. Settings file generate karna
           echo "include ':app'" > settings.gradle
-
-          # Top-level build.gradle
+          
+          # 4. Top-level build.gradle generate karna
           cat > build.gradle << 'EOF'
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:7.4.2'
-              }
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
           }
           allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
           }
           EOF
-
-          # App-level build.gradle
+          
+          # 5. App-level build.gradle generate karna
           cat > app/build.gradle << 'EOF'
-          plugins {
-              id 'com.android.application'
-          }
+          plugins { id 'com.android.application' }
           android {
               namespace 'com.notif.read'
               compileSdk 33
@@ -83,15 +54,15 @@ jobs:
           }
           EOF
 
-      - name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.0
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+      - name: Build with Gradle
+        run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: NotificationApp
