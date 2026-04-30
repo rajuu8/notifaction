@@ -1,10 +1,15 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+}
+
 android {
-    compileSdk 31
+    namespace 'com.notif.read'
+    compileSdk 33
+
     defaultConfig {
         applicationId "com.notif.read"
         minSdk 21
-        targetSdk 31
+        targetSdk 33
         versionCode 1
         versionName "1.0"
     }
