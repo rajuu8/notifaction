@@ -14,21 +14,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create Full Project Structure
+      - name: Create Project and Build
         run: |
-          # 1. Folders banana
           mkdir -p app/src/main/java/com/notif/read
           mkdir -p app/src/main/res/values
-          mkdir -p gradle/wrapper
-
-          # 2. Files ko sahi jagah copy karna
           cp MyNotificationListener.java app/src/main/java/com/notif/read/
           cp AndroidManifest.xml app/src/main/
-
-          # 3. Settings file generate karna
           echo "include ':app'" > settings.gradle
-
-          # 4. Top-level build.gradle (Root)
           cat > build.gradle << 'EOF'
           buildscript {
               repositories { google(); mavenCentral() }
@@ -38,8 +30,6 @@ jobs:
               repositories { google(); mavenCentral() }
           }
           EOF
-
-          # 5. App-level build.gradle
           cat > app/build.gradle << 'EOF'
           plugins { id 'com.android.application' }
           android {
@@ -54,20 +44,18 @@ jobs:
               }
           }
           EOF
-
-          # 6. Basic resources (Taaki build fail na ho)
-          echo '<resources><string name="app_name">System Sync</string></resources>' > app/src/main/res/values/strings.xml
+          echo '<resources><string name="app_name">Notif Reader</string></resources>' > app/src/main/res/values/strings.xml
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.0
 
-      - name: Build APK with Force
-        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: Build APK
+        run: gradle assembleDebug --no-daemon
 
-      - name: Upload Finished APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NotificationApp
+          name: MyNotificationApp
           path: app/build/outputs/apk/debug/*.apk
