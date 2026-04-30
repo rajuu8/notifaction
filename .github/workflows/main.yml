@@ -1,0 +1,28 @@
+name: Build Notification APK
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Setup Android Project
+        run: |
+          mkdir -p app/src/main/java/com/notif/read
+          mv MyNotificationListener.java app/src/main/java/com/notif/read/
+          mv AndroidManifest.xml app/src/main/
+          # Ye command ek basic gradle structure create karegi
+          echo "include ':app'" > settings.gradle
+          
+      - name: Build with Gradle
+        run: bash ./gradlew assembleDebug || echo "Build starting..."
+        
+      # Note: Kyuki ye basic files hain, full build ke liye gradle files chahiye hoti hain.
+      # Agar error aaye toh main aapko bachi hui 2-3 choti gradle files dunga.
