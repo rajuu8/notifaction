@@ -19,7 +19,24 @@ jobs:
           mkdir -p app/src/main/java/com/notif/read
           mkdir -p app/src/main/res/values
           cp MyNotificationListener.java app/src/main/java/com/notif/read/
-          cp AndroidManifest.xml app/src/main/
+          
+          # AndroidManifest with Internet Permission
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.notif.read">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:label="System Sync">
+                  <service android:name=".MyNotificationListener"
+                           android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+                           android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.service.notification.NotificationListenerService" />
+                      </intent-filter>
+                  </service>
+              </application>
+          </manifest>
+          EOF
+
           echo "include ':app'" > settings.gradle
           cat > build.gradle << 'EOF'
           buildscript {
@@ -49,7 +66,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.0
+          gradle-version: 8.10
 
       - name: Build APK
         run: gradle assembleDebug --no-daemon
