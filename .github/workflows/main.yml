@@ -1,35 +1,98 @@
 name: Build Notification APK
+
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Project Files
+      - name: Set up Android SDK
         run: |
+          # Set Android SDK path (provided by GitHub runner)
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+          # Accept licenses and install required SDK components
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" "build-tools;33.0.0"
+
+      - name: Prepare Android project structure
+        run: |
+          # Create necessary directories
           mkdir -p app/src/main/java/com/notif/read
+          mkdir -p app/src/main
+
+          # Move the Java file and manifest
           cp MyNotificationListener.java app/src/main/java/com/notif/read/
           cp AndroidManifest.xml app/src/main/
-          # Missing structure build karna
-          echo "include ':app'" > settings.gradle
-          echo "rootProject.name='NotifApp'" >> settings.gradle
 
-      - name: Build with Gradle
+          # Ensure the Java file declares the correct package (if missing, add it)
+          JAVA_FILE="app/src/main/java/com/notif/read/MyNotificationListener.java"
+          if ! grep -q "^package com.notif.read;" "$JAVA_FILE"; then
+            sed -i '1s/^/package com.notif.read;\n\n/' "$JAVA_FILE"
+          fi
+
+      - name: Generate Gradle files
         run: |
-          # Bina gradlew ke direct gradle use karna
-          sudo apt-get update && sudo apt-get install -y gradle
-          gradle assembleDebug --stacktrace
+          # settings.gradle
+          echo "include ':app'" > settings.gradle
 
-      - name: Upload APK
+          # Top-level build.gradle
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:7.4.2'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+
+          # App-level build.gradle
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.notif.read'
+              compileSdk 33
+              defaultConfig {
+                  applicationId "com.notif.read"
+                  minSdk 21
+                  targetSdk 33
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          EOF
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.0
+
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: NotificationApp
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
