@@ -13,18 +13,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Project Structure
+      - name: Setup Project Files
         run: |
           mkdir -p app/src/main/java/com/notif/read
           cp MyNotificationListener.java app/src/main/java/com/notif/read/
           cp AndroidManifest.xml app/src/main/
+          # Missing structure build karna
           echo "include ':app'" > settings.gradle
-          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:7.4.2' } }" > build.gradle
-          echo "allprojects { repositories { google(); mavenCentral() } }" >> build.gradle
+          echo "rootProject.name='NotifApp'" >> settings.gradle
 
-      - name: Build Debug APK
+      - name: Build with Gradle
         run: |
-          # Bina gradlew ke bhi build karne ki koshish karega
+          # Bina gradlew ke direct gradle use karna
+          sudo apt-get update && sudo apt-get install -y gradle
           gradle assembleDebug --stacktrace
 
       - name: Upload APK
